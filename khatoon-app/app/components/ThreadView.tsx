@@ -90,6 +90,7 @@ export default function ThreadView() {
 
     const primary_dir = userPrimaryLang === "fa" ? "rtl" : "ltr";
     const secondary_dir = item.original_lang === "fa" ? "rtl" : "ltr";
+    const isMachineTranslated = item.original_lang !== userPrimaryLang;
 
     return (
       <View
@@ -98,6 +99,7 @@ export default function ThreadView() {
           {
             alignSelf: item.sender === "chef" ? "flex-end" : "flex-start",
           },
+          isMachineTranslated && styles.machineBubble,
         ]}
       >
         {primary && (
@@ -105,6 +107,7 @@ export default function ThreadView() {
             style={[
               styles.primaryText,
               primary_dir === "rtl" ? styles.farsi : styles.english,
+              isMachineTranslated && styles.machineText,
               { marginBottom: secondary ? 4 : 0 },
             ]}
           >
@@ -210,4 +213,19 @@ const styles = StyleSheet.create({
     marginRight: 8,
     maxHeight: 120,
   },
+  machineBubble: {
+    borderColor: "red",
+    borderWidth: 1,
+  },
+  machineText: {
+    color: "red",
+    fontStyle: "italic",
+  },
+  machineLabel: {
+    fontSize: 10,
+    color: "red",
+    textAlign: "right",
+    marginTop: 4,
+  },
+
 });
