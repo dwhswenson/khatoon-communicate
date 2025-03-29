@@ -12,3 +12,6 @@ version = "0.1.0"
 twilio = ">=9.5.1,<10"
 click = ">=8.1.8,<9"
 boto3 = ">=1.37.18,<2"
+nodejs = "*"
+
+jupyter = "*"
