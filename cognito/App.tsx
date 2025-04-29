@@ -3,12 +3,14 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 // Screens (we’ll build these next)
+import Splash from './src/screens/Splash';
 import AuthScreen from './src/screens/AuthScreen';
 import HomeScreen from './src/screens/HomeScreen';
 
 export type RootStackParamList = {
   Auth: undefined;
   Home: undefined;
+  Splash: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -22,8 +24,9 @@ const linking = {
   ],
   config: {
     screens: {
+      Splash: '',
       Auth: 'redirect',  // any of the above + /redirect → AuthScreen
-      Home: ''                // root → Home
+      Home: 'home'       // home → Home
     }
   }
 };
@@ -32,7 +35,12 @@ const linking = {
 export default function App() {
   return (
     <NavigationContainer linking={linking}>
-      <Stack.Navigator initialRouteName="Auth">
+      <Stack.Navigator initialRouteName="Splash">
+        <Stack.Screen
+         name="Splash"
+         component={Splash}
+         options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="Auth"
           component={AuthScreen}

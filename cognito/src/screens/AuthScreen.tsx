@@ -13,6 +13,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Crypto from 'expo-crypto';
 import Constants from 'expo-constants';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { storeTokens } from '../utils/tokenStorage';
 import { RootStackParamList } from '../../App';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -140,8 +141,15 @@ export default function AuthScreen({ navigation }: Props) {
               return {};
             }
           })
-          .then(tokens => {
+          .then(async tokens => {
             console.log('Success—navigating to Home');
+            await storeTokens({
+              accessToken:  tokens.access_token,
+              idToken:      tokens.id_token,
+              refreshToken: tokens.refresh_token,
+              expiresIn:   tokens.expires_in,
+              fetchedAt:    Date.now()
+            });
             window.history.replaceState({}, '', '/');
             navigation.replace('Home');
           })
@@ -163,7 +171,14 @@ export default function AuthScreen({ navigation }: Props) {
           if (!res.ok) throw new Error(`Exchange failed: ${res.status}`);
           const tokens = await res.json();
           console.log('Tokens:', tokens);
-          // TODO: persist tokens
+
+          await storeTokens({
+            accessToken: tokens.access_token,
+            idToken: tokens.id_token,
+            refreshToken: tokens.refresh_token,
+            expiresIn: tokens.expires_in,
+            fetchedAt: Date.now()
+          })
 
           navigation.replace('Home');
         } catch (e: any) {

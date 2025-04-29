@@ -6,6 +6,7 @@ import Constants from 'expo-constants';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { clearTokens } from '../utils/tokenStorage.ts';
 import { RootStackParamList } from '../../App';
 
 // Grab your Cognito info from app.config.js → Constants.manifest.extra
@@ -16,10 +17,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 export default function HomeScreen({ navigation }: Props) {
   const signOut = async () => {
-    // 1. Clear any stored tokens here (e.g., SecureStore.deleteItemAsync)
-    //    await SecureStore.deleteItemAsync('accessToken');
-    //    await SecureStore.deleteItemAsync('refreshToken');
-    //    etc.
+    await clearTokens();
 
     // cognito logout
     const redirectUri = AuthSession.makeRedirectUri({
