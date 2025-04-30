@@ -6,7 +6,8 @@ import Constants from 'expo-constants';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { clearTokens } from '../utils/tokenStorage.ts';
+import { useAuth } from '../contexts/AuthContext';
+import { clearTokens } from '../utils/tokenStorage';
 import { RootStackParamList } from '../../App';
 
 // Grab your Cognito info from app.config.js → Constants.manifest.extra
@@ -16,8 +17,9 @@ const { COGNITO_DOMAIN, COGNITO_CLIENT_ID } =
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 export default function HomeScreen({ navigation }: Props) {
-  const signOut = async () => {
-    await clearTokens();
+  const { signOut } = useAuth();
+  const handleSignOut = async () => {
+    await signOut()
 
     // cognito logout
     const redirectUri = AuthSession.makeRedirectUri({
@@ -48,7 +50,7 @@ export default function HomeScreen({ navigation }: Props) {
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       <Text>You’re signed in! 🎉</Text>
-      <Button title="Sign Out" onPress={signOut} />
+      <Button title="Sign Out" onPress={handleSignOut} />
     </View>
   );
 }

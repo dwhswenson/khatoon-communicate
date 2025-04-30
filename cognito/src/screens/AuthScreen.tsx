@@ -13,9 +13,8 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Crypto from 'expo-crypto';
 import Constants from 'expo-constants';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { storeTokens } from '../utils/tokenStorage';
-import { scheduleProactiveRefresh } from '../utils/refreshTokens';
 import { RootStackParamList } from '../../App';
+import { useAuth } from '../contexts/AuthContext';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -34,6 +33,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Auth'>;
 
 export default function AuthScreen({ navigation }: Props) {
   const isWeb = Platform.OS === 'web';
+  const { signIn } = useAuth();
 
   const redirectUri = AuthSession.makeRedirectUri({
     scheme:   'khatoon',
@@ -117,72 +117,22 @@ export default function AuthScreen({ navigation }: Props) {
         console.log('Extracted code:', code, 'verifier:', codeVerifier);
 
         console.group('[Auth:exchange]');
-        console.log('Posting to:', `${EXCHANGE_API_URL}/exchange`);
-        console.log('Payload:', { code, redirectUri, codeVerifier });
-
-        fetch(`${EXCHANGE_API_URL}/exchange`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code, redirectUri, codeVerifier }),
-        })
-          .then(async res => {
-            console.log('HTTP status:', res.status);
-            const text = await res.text();
-            console.log('Response body text:', text);
-            if (!res.ok) {
-              // show the raw response so we know what went wrong
-              throw new Error(`Exchange failed ${res.status}: ${text}`);
-            }
-            try {
-              const data = JSON.parse(text);
-              console.log('Parsed tokens:', data);
-              return data;
-            } catch {
-              console.warn('Non-JSON response, skipping parse');
-              return {};
-            }
-          })
-          .then(async tokens => {
-            console.log('Success—navigating to Home');
-            await storeTokens({
-              accessToken:  tokens.access_token,
-              idToken:      tokens.id_token,
-              refreshToken: tokens.refresh_token,
-              expiresIn:   tokens.expires_in,
-              //expiresIn: 10,
-              fetchedAt:    Date.now()
-            });
-            scheduleProactiveRefresh();
+        (async () => {
+          try {
+            await signIn(code, codeVerifier);
             window.history.replaceState({}, '', '/');
             navigation.replace('Home');
-          })
-          .catch(err => {
-            console.error('Exchange error:', err);
-            Alert.alert('Login Error', err.message);
-          })
-          .finally(() => console.groupEnd());
+          } catch (e: any) {
+            console.error('Exchange error:', e);
+            Alert.alert('Login error', e.message);
+          }
+        })();
       }
     } else if (response?.type === 'success') {
       const { code, codeVerifier } = response.params;
       (async () => {
         try {
-          const res = await fetch(`${EXCHANGE_API_URL}/exchange`, {
-            method:  'POST',
-            headers: {'Content-Type':'application/json'},
-            body:    JSON.stringify({ code, redirectUri, codeVerifier }),
-          });
-          if (!res.ok) throw new Error(`Exchange failed: ${res.status}`);
-          const tokens = await res.json();
-          console.log('Tokens:', tokens);
-
-          await storeTokens({
-            accessToken: tokens.access_token,
-            idToken: tokens.id_token,
-            refreshToken: tokens.refresh_token,
-            expiresIn: tokens.expires_in,
-            fetchedAt: Date.now()
-          })
-
+          await signIn(code, codeVerifier);
           navigation.replace('Home');
         } catch (e: any) {
           Alert.alert('Login error', e.message);
