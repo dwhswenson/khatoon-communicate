@@ -14,6 +14,7 @@ import * as Crypto from 'expo-crypto';
 import Constants from 'expo-constants';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { storeTokens } from '../utils/tokenStorage';
+import { scheduleProactiveRefresh } from '../utils/refreshTokens';
 import { RootStackParamList } from '../../App';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -148,8 +149,10 @@ export default function AuthScreen({ navigation }: Props) {
               idToken:      tokens.id_token,
               refreshToken: tokens.refresh_token,
               expiresIn:   tokens.expires_in,
+              //expiresIn: 10,
               fetchedAt:    Date.now()
             });
+            scheduleProactiveRefresh();
             window.history.replaceState({}, '', '/');
             navigation.replace('Home');
           })

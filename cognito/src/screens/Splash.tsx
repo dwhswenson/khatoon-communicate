@@ -5,6 +5,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { getTokens } from '../utils/tokenStorage';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList }       from '../../App';
+import { refreshTokens, scheduleProactiveRefresh } from '../utils/refreshTokens';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Splash'>;
 
@@ -14,8 +15,19 @@ export default function Splash({ navigation }: Props) {
     (async () => {
       const tokens = await getTokens();
       if (tokens) {
+        scheduleProactiveRefresh(tokens);
         console.log('Tokens found:', tokens);
-        // optionally check expiry here and refresh if needed…
+
+        // check expiry and refresh if needed
+        const now = Date.now();
+        const expiry = tokens.fetchedAt + tokens.expiresIn * 1000;
+        if (now > expiry) {
+          const ok = await refreshTokens();
+          if (!ok) {
+            return navigation.replace("Auth");
+          }
+        }
+
         navigation.replace('Home');
       } else {
         navigation.replace('Auth');
