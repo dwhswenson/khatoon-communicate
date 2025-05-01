@@ -20,7 +20,7 @@ const { EXCHANGE_API_URL } = (Constants.manifest?.extra ?? {}) as Record<string,
 export interface AuthContextData {
   isLoading: boolean;
   isSignedIn: boolean;
-  signIn(code: string, codeVerifier: string): Promise<void>;
+  signIn(code: string, codeVerifier: string, redirectUri: string): Promise<void>;
   signOut(): Promise<void>;
   getAccessToken(): Promise<string>;
 }
@@ -61,14 +61,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   // Exchange code for tokens, persist, schedule refresh
-  const signIn = async (code: string, codeVerifier: string) => {
+  const signIn = async (code: string, codeVerifier: string, redirectUri: string) => {
     setLoading(true);
     try {
       // Exchange code for tokens
+      const body = JSON.stringify({ code, redirectUri, codeVerifier });
+      console.log('Exchange body:', body);
       const res = await fetch(`${EXCHANGE_API_URL}/exchange`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, redirectUri: undefined, codeVerifier })
+        body: JSON.stringify({ code, redirectUri, codeVerifier })
       });
       if (!res.ok) throw new Error(`Exchange failed: ${res.status}`);
       const data = await res.json();

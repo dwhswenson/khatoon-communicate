@@ -94,6 +94,7 @@ export default function AuthScreen({ navigation }: Props) {
         code_challenge_method: 'S256',
         scope:                 'openid email profile',
       });
+      console.log('Web login params:', params.toString());
 
       window.location.assign(
         `https://${COGNITO_DOMAIN}/oauth2/authorize?${params.toString()}`
@@ -119,7 +120,7 @@ export default function AuthScreen({ navigation }: Props) {
         console.group('[Auth:exchange]');
         (async () => {
           try {
-            await signIn(code, codeVerifier);
+            await signIn(code, codeVerifier, redirectUri);
             window.history.replaceState({}, '', '/');
             navigation.replace('Home');
           } catch (e: any) {
@@ -132,7 +133,7 @@ export default function AuthScreen({ navigation }: Props) {
       const { code, codeVerifier } = response.params;
       (async () => {
         try {
-          await signIn(code, codeVerifier);
+          await signIn(code, codeVerifier, redirectUri);
           navigation.replace('Home');
         } catch (e: any) {
           Alert.alert('Login error', e.message);
