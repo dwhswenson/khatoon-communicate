@@ -4,6 +4,8 @@ import { Alert } from 'react-native';
 //import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 
+import { jwtDecode } from 'jwt-decode';
+
 import {
   getTokens,
   storeTokens,
@@ -12,15 +14,13 @@ import {
 } from '../utils/tokenStorage';
 import { refreshTokens, scheduleProactiveRefresh } from '../utils/refreshTokens';
 
-// Decode or fetch user info from ID token if desired
-// import jwtDecode from 'jwt-decode';
-
 const { EXCHANGE_API_URL } = (Constants.manifest?.extra ?? {}) as Record<string, string>;
 
 export interface AuthContextData {
   isLoading: boolean;
   isSignedIn: boolean;
   signIn(code: string, codeVerifier: string, redirectUri: string): Promise<void>;
+  userEmail: string | null;
   signOut(): Promise<void>;
   getAccessToken(): Promise<string>;
 }
@@ -35,6 +35,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   //const navigation = useNavigation<any>();
   const [isLoading, setLoading] = useState(true);
   const [isSignedIn, setSignedIn] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   // Rehydrate and refresh on mount
   useEffect(() => {
@@ -43,12 +44,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const tokens = await getTokens();
         console.log('Rehydrated tokens:', tokens);
         if (tokens) {
+          try {
+            const claims = jwtDecode<{ email: string }>(tokens.idToken);
+            setUserEmail(claims.email);
+          } catch (err: any) {
+            console.error('JWT decode error:', err);
+            setUserEmail(null);
+          }
           const ok = await refreshTokens();
           if (ok) {
             scheduleProactiveRefresh();
             setSignedIn(true);
           } else {
             await clearTokens();
+            setUserEmail(null);
             setSignedIn(false);
           }
         }
@@ -81,6 +90,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         expiresIn:    data.expires_in,
         fetchedAt:    Date.now(),
       };
+      try {
+        console.log('Decoding token:', data.id_token);
+        console.log('Decoded ID token:', jwtDecode(data.id_token));
+        const claims = jwtDecode<{ email: string }>(data.id_token);
+        setUserEmail(claims.email);
+      } catch (err: any) { 
+        console.error('JWT decode error:', err);
+        setUserEmail(null);
+      }
+      console.log('Storing tokens:', tokens);
       await storeTokens(tokens);
       scheduleProactiveRefresh();
       setSignedIn(true);
@@ -96,7 +115,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signOut = async () => {
     setLoading(true);
     await clearTokens();
-    // calling scheduleProactiveRefresh with no tokens will clear the timer
+    setUserEmail(null);
     scheduleProactiveRefresh();
     setSignedIn(false);
     setLoading(false);
@@ -127,7 +146,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   return (
     <AuthContext.Provider
-      value={{ isLoading, isSignedIn, signIn, signOut, getAccessToken }}
+      value={{ 
+        isLoading,
+        userEmail,
+        isSignedIn,
+        signIn,
+        signOut,
+        getAccessToken
+      }}
     >
       {children}
     </AuthContext.Provider>

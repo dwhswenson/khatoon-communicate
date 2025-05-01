@@ -17,7 +17,8 @@ const { COGNITO_DOMAIN, COGNITO_CLIENT_ID } =
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 export default function HomeScreen({ navigation }: Props) {
-  const { signOut } = useAuth();
+  const { userEmail, signOut } = useAuth();
+  console.log('userEmail', userEmail);
   const handleSignOut = async () => {
     await signOut()
 
@@ -49,6 +50,11 @@ export default function HomeScreen({ navigation }: Props) {
 
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      { userEmail ? (
+        <Text style={{ marginBottom: 20 }}>
+          Logged in as: {userEmail}
+        </Text>
+      ) : null }
       <Text>You’re signed in! 🎉</Text>
       <Button title="Sign Out" onPress={handleSignOut} />
     </View>
