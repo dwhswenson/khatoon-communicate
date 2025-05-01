@@ -12,6 +12,7 @@ import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import * as Crypto from 'expo-crypto';
 import Constants from 'expo-constants';
+import { RouteProp } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useAuth } from '../contexts/AuthContext';
@@ -31,7 +32,10 @@ const discovery = {
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Auth'>;
 
-export default function AuthScreen({ navigation }: Props) {
+export default function AuthScreen({ navigation, route }: Props) {
+  console.log('[AuthScreen] window.location:', window.location.href);
+  console.log('[AuthScreen] route.params =', route.params);
+  const { code } = route.params ?? {};
   const isWeb = Platform.OS === 'web';
   const { signIn } = useAuth();
 
@@ -121,7 +125,7 @@ export default function AuthScreen({ navigation }: Props) {
         (async () => {
           try {
             await signIn(code, codeVerifier, redirectUri);
-            window.history.replaceState({}, '', '/');
+            //window.history.replaceState({}, '', '/');
             navigation.replace('Home');
           } catch (e: any) {
             console.error('Exchange error:', e);
