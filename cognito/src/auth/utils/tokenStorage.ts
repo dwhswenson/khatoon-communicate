@@ -4,7 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 import Constants        from 'expo-constants';
 import { Platform }     from 'react-native';
 
-const TOKEN_KEY = 'auth_tokens';
+export const TOKEN_KEY = 'auth_tokens';
 
 export interface Tokens {
   accessToken:  string;

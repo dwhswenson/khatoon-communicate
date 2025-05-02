@@ -2,6 +2,13 @@
 import { getTokens, storeTokens, clearTokens, Tokens } from "./tokenStorage";
 import Constants from 'expo-constants';
 
+interface TokenResponse {
+  access_token:  string;
+  id_token:      string;
+  refresh_token?: string;
+  expires_in:    number;
+}
+
 const { EXCHANGE_API_URL } = (Constants.manifest?.extra ?? {}) as any;
 const REFRESH_URL = `${EXCHANGE_API_URL}/refresh`;
 
@@ -17,15 +24,16 @@ export async function refreshTokens(): Promise<boolean> {
       body: JSON.stringify({ refreshToken: tokens.refreshToken }),
     });
     if (!res.ok) throw new Error(`Refresh failed ${res.status}`);
-    const newTokens: Partial<Tokens> & { expires_in: number } = await res.json();
-    // Merge & store
-    await storeTokens({
-      accessToken:  newTokens.access_token!,
-      idToken:      newTokens.id_token!,
+    const newTokens = (await res.json()) as TokenResponse;
+    const merged: Tokens = {
+      accessToken:  newTokens.access_token,
+      idToken:      newTokens.id_token,
       refreshToken: newTokens.refresh_token ?? tokens.refreshToken,
       expiresIn:    newTokens.expires_in,
       fetchedAt:    Date.now(),
-    });
+    };
+
+    await storeTokens(merged);
     scheduleProactiveRefresh();
     return true;
   } catch {
