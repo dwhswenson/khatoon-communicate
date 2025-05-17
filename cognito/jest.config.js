@@ -7,6 +7,11 @@ module.exports = {
   transform: {
     '^.+\\.(ts|tsx)$': 'ts-jest',
   },
+  globals: {
+      'ts-jest': {
+      tsconfig: 'tsconfig.json',
+    }
+  },
   moduleNameMapper: {
     '^expo-secure-store$': '<rootDir>/src/auth/utils/__mocks__/expo-secure-store.ts',
     '^expo-constants$':    '<rootDir>/src/auth/utils/__mocks__/expo-constants.ts',
@@ -15,4 +20,4 @@ module.exports = {
   transformIgnorePatterns: [
     'node_modules/(?!(buffer)/)',
   ],
-};
+}
