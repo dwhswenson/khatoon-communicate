@@ -1,4 +1,4 @@
-// src/auth/navigators/AuthFlow.test.tsx
+// src/auth/compoents/AuthContent.test.tsx
 
 jest.mock('expo-auth-session', () => ({
   // match whatever your AuthScreen actually imports/uses
@@ -21,7 +21,7 @@ jest.mock('expo-crypto', () => ({
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { AuthContent, AuthContentProps } from '../components/AuthContent';
+import { AuthContent, AuthContentProps } from './AuthContent';
 import { useAuth } from '../contexts/AuthContext';
 
 jest.mock('../contexts/AuthContext');
