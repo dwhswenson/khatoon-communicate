@@ -14,7 +14,7 @@ import * as Crypto from 'expo-crypto';
 import Constants from 'expo-constants';
 import { RouteProp } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { AuthFlowParamList as RootStackParamList } from '../navigators/types';
+import type { AuthFlowParamList } from '../navigators/types';
 import { useAuth } from '../contexts/AuthContext';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -30,7 +30,7 @@ const discovery = {
   tokenEndpoint:         `https://${COGNITO_DOMAIN}/oauth2/token`,
 };
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Auth'>;
+type Props = NativeStackScreenProps<AuthFlowParamList, 'Auth'>;
 
 export default function AuthScreen({ navigation, route }: Props) {
   console.log('[AuthScreen] window.location:', window.location.href);

@@ -8,13 +8,13 @@ import * as AuthSession from 'expo-auth-session';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../contexts/AuthContext';
 import { clearTokens } from '../utils/tokenStorage';
-import type { AuthFlowParamList as RootStackParamList } from '../navigators/types';
+import type { AuthFlowParamList } from '../navigators/types';
 
 // Grab your Cognito info from app.config.js → Constants.manifest.extra
 const { COGNITO_DOMAIN, COGNITO_CLIENT_ID } =
   (Constants.manifest?.extra ?? {}) as Record<string, string>;
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
+type Props = NativeStackScreenProps<AuthFlowParamList, 'Home'>;
 
 export default function HomeScreen({ navigation }: Props) {
   const { userEmail, signOut } = useAuth();

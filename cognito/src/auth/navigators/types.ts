@@ -1,5 +1,7 @@
 // src/auth/navigators/types.ts
+
 export type AuthFlowParamList = {
-  Auth: {code?: string},
+  Root: undefined;
+  Auth: { code?: string };
   Home: undefined;
 };
