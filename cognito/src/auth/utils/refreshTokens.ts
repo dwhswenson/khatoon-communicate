@@ -12,7 +12,7 @@ interface TokenResponse {
 const { EXCHANGE_API_URL } = (Constants.manifest?.extra ?? {}) as any;
 const REFRESH_URL = `${EXCHANGE_API_URL}/refresh`;
 
-let refreshTimer: NodeJS.Timeout | null = null;
+let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 export async function refreshTokens(): Promise<boolean> {
   const tokens = await getTokens();

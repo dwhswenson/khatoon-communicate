@@ -1,4 +1,4 @@
-// src/screens/AuthScreen.tsx
+// src/auth/screens/AuthScreen.tsx
 
 import React, { useEffect } from 'react';
 import {
@@ -14,7 +14,7 @@ import * as Crypto from 'expo-crypto';
 import Constants from 'expo-constants';
 import { RouteProp } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../App';
+import type { AuthFlowParamList as RootStackParamList } from '../navigators/types';
 import { useAuth } from '../contexts/AuthContext';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -42,7 +42,7 @@ export default function AuthScreen({ navigation, route }: Props) {
   const redirectUri = AuthSession.makeRedirectUri({
     scheme:   'khatoon',
     path:     'redirect',
-    useProxy: false,
+    //useProxy: false,
   });
 
   console.log(`[AuthScreen] running on ${isWeb ? 'web' : 'native'}`);
@@ -167,7 +167,7 @@ export default function AuthScreen({ navigation, route }: Props) {
     <View style={{ flex:1,justifyContent:'center',alignItems:'center' }}>
       <Button
         title="Log in with Cognito"
-        onPress={() => promptAsync({ useProxy: false })}
+        onPress={() => promptAsync(/*{ useProxy: false }*/)}
       />
     </View>
   );

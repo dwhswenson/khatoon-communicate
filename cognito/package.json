@@ -30,9 +30,11 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@types/jest": "^29.5.14",
     "@types/jwt-decode": "^2.2.1",
+    "@types/node": "^22.15.18",
     "@types/react": "~18.3.12",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",

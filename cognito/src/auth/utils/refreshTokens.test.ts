@@ -1,7 +1,6 @@
 // src/auth/utils/refreshTokens.test.ts
-//
-(global as any).fetch = jest.fn();
-// 1) Always mock the native storage pieces so no real react-native or expo gets loaded:
+
+(globalThis as any).fetch = jest.fn();
 jest.mock('expo-secure-store', () => {
   const memory: Record<string,string> = {};
   return {
@@ -12,15 +11,9 @@ jest.mock('expo-secure-store', () => {
   };
 });
 
-jest.mock('react-native', () => ({
-  Platform: { OS: 'ios' }  // simulate the “native” branch
-}));
-
-// 2) Now import the module under test
 import { refreshTokens } from './refreshTokens';
 import * as storage from './tokenStorage';
 
-// 3) Helper to seed stale tokens
 const staleTokens = {
   accessToken:  'oldA',
   idToken:      'oldI',
@@ -32,12 +25,10 @@ const staleTokens = {
 describe('refreshTokens()', () => {
   beforeEach(async () => {
     jest.resetAllMocks();
-    // put the stale tokens into storage
     await storage.storeTokens(staleTokens);
   });
 
   afterEach(async () => {
-    // clear everything
     await storage.clearTokens();
   });
 
@@ -49,7 +40,7 @@ describe('refreshTokens()', () => {
       expires_in:    3600,
     };
 
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
+    (globalThis.fetch as jest.Mock).mockResolvedValueOnce({
       ok:   true,
       json: async () => newPayload,
     } as any);
@@ -57,7 +48,6 @@ describe('refreshTokens()', () => {
     const ok = await refreshTokens();
     expect(ok).toBe(true);
 
-    // verify storage was updated
     const stored = await storage.getTokens();
     expect(stored).toMatchObject({
       accessToken:  'newA',
@@ -67,7 +57,7 @@ describe('refreshTokens()', () => {
   });
 
   it('returns false and clears storage on HTTP 400', async () => {
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
+    (globalThis.fetch as jest.Mock).mockResolvedValueOnce({
       ok:     false,
       status: 400,
       text:   async () => 'Bad request',

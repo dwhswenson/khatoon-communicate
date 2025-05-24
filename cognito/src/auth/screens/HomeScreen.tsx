@@ -8,7 +8,7 @@ import * as AuthSession from 'expo-auth-session';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../contexts/AuthContext';
 import { clearTokens } from '../utils/tokenStorage';
-import { RootStackParamList } from '../../App';
+import type { AuthFlowParamList as RootStackParamList } from '../navigators/types';
 
 // Grab your Cognito info from app.config.js → Constants.manifest.extra
 const { COGNITO_DOMAIN, COGNITO_CLIENT_ID } =
@@ -26,7 +26,7 @@ export default function HomeScreen({ navigation }: Props) {
     const redirectUri = AuthSession.makeRedirectUri({
       scheme: 'khatoon',
       path: 'redirect',
-      useProxy: false,   // use your registered localhost URLs
+      //useProxy: false,   // use your registered localhost URLs
     });
     const logoutUrl =
       `https://${COGNITO_DOMAIN}/logout?` +

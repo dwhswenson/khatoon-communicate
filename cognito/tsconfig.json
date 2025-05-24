@@ -1,6 +1,7 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
+    "types": ["jest", "@testing-library/jest-dom", "jest"],
     "strict": true,
     "jsx": "react"
   }
