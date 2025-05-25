@@ -15,6 +15,7 @@ module.exports = {
   },
   moduleNameMapper: {
     '\\.(png|jpe?g|gif|webp|svg)$': '<rootDir>/__mocks__/fileMock.js',
+    '^expo-crypto$': '<rootDir>/__mocks__/expo-crypto.js',
     '^expo-secure-store$': '<rootDir>/src/auth/utils/__mocks__/expo-secure-store.ts',
     '^expo-constants$': '<rootDir>/src/auth/utils/__mocks__/expo-constants.ts',
     '^react-native/Libraries/Utilities/codegenNativeComponent$': '<rootDir>/__mocks__/react-native-codegenNativeComponent.js',

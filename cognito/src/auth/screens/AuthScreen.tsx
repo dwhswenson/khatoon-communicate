@@ -64,14 +64,9 @@ export default function AuthScreen({ navigation }: Props) {
     if (isWeb && window.location.search.includes('code=')) {
       (async () => {
         try {
-          const params = new URLSearchParams(window.location.search);
-          code = params.get('code');
-          console.log("code", code);
-          await signIn(
-            code,
-            sessionStorage.getItem('pkce_verifier')!,
-            redirectUri,
-          );
+          const { code, codeVerifier } = parseRedirectParams(window.location.search);
+          console.log('code', code, 'verifier', codeVerifier);
+          await signIn(code, codeVerifier, redirectUri);
           console.log("heading to home");
           navigation.replace('Home');
         } catch (e: any) {
@@ -81,8 +76,9 @@ export default function AuthScreen({ navigation }: Props) {
     } else if (!isWeb && response?.type === 'success') {
       (async () => {
         try {
-          await handleRedirect(`?code=${response.params.code}`);
-          await signIn(code, codeVerifier)
+          const { code, codeVerifier } = response.params;
+          console.log('native code', code, 'verifier', codeVerifier);
+          await signIn(code, codeVerifier, redirectUri);
           navigation.replace('Home');
         } catch (e: any) {
           Alert.alert('Login error', e.message);
