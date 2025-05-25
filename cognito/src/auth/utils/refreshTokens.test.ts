@@ -11,7 +11,10 @@ jest.mock('expo-secure-store', () => {
   };
 });
 
+jest.mock('./tokenStorage');
+
 import { refreshTokens } from './refreshTokens';
+import { scheduleProactiveRefresh } from './refreshTokens';
 import * as storage from './tokenStorage';
 
 const staleTokens = {
@@ -24,12 +27,14 @@ const staleTokens = {
 
 describe('refreshTokens()', () => {
   beforeEach(async () => {
+    jest.clearAllTimers();
     jest.resetAllMocks();
     await storage.storeTokens(staleTokens);
+    (storage.getTokens as jest.Mock).mockResolvedValue(staleTokens);
   });
 
   afterEach(async () => {
-    await storage.clearTokens();
+    jest.clearAllMocks();
   });
 
   it('returns true and replaces tokens on HTTP 200', async () => {
@@ -48,13 +53,23 @@ describe('refreshTokens()', () => {
     const ok = await refreshTokens();
     expect(ok).toBe(true);
 
-    const stored = await storage.getTokens();
-    expect(stored).toMatchObject({
+    expect(storage.storeTokens).toHaveBeenCalledWith({
       accessToken:  'newA',
       idToken:      'newI',
       refreshToken: 'newR',
+      expiresIn:    3600,
+      fetchedAt:    expect.any(Number),
     });
   });
+
+  it('returns false immediately if there are no stored tokens', async () => {
+    (storage.getTokens as jest.Mock).mockResolvedValueOnce(null);
+
+    const ok = await refreshTokens();
+    expect(ok).toBe(false);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
 
   it('returns false and clears storage on HTTP 400', async () => {
     (globalThis.fetch as jest.Mock).mockResolvedValueOnce({
@@ -66,7 +81,46 @@ describe('refreshTokens()', () => {
     const ok = await refreshTokens();
     expect(ok).toBe(false);
 
-    const stored = await storage.getTokens();
-    expect(stored).toBeNull();
+    expect(storage.clearTokens).toHaveBeenCalled();
+  });
+
+  it('returns false and clears storage on network error', async () => {
+    (globalThis.fetch as jest.Mock).mockRejectedValue(new Error('network down'));
+
+    const ok = await refreshTokens();
+    expect(ok).toBe(false);
+    expect(storage.clearTokens).toHaveBeenCalled();
+  });
+});
+
+describe('scheduleProactiveRefresh()', () => {
+  const FAKE_NOW = 1_000_000;
+  beforeEach(() => {
+    jest.spyOn(Date, 'now').mockReturnValue(FAKE_NOW);
+    jest.clearAllMocks();
+    jest.clearAllTimers();
+    (storage.getTokens as jest.Mock).mockResolvedValue({
+      accessToken:  'x',
+      idToken:      'i',
+      refreshToken: 'r',
+      expiresIn:    3600,
+      fetchedAt:    FAKE_NOW,
+    });
+  });
+
+  it('schedules a refresh one minute before expiry', async () => {
+    const timeoutSpy = jest.spyOn(globalThis, 'setTimeout');
+    await scheduleProactiveRefresh();
+    expect(timeoutSpy).toHaveBeenCalledWith(
+      expect.any(Function),
+      (3600 - 60) * 1000
+    );
+  });
+
+  it('clears the previous timer when called again', async () => {
+    const clearSpy = jest.spyOn(globalThis, 'clearTimeout');
+    await scheduleProactiveRefresh();
+    await scheduleProactiveRefresh();
+    expect(clearSpy).toHaveBeenCalled();
   });
 });

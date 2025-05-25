@@ -42,30 +42,30 @@ export async function refreshTokens(): Promise<boolean> {
   }
 }
 
-export function scheduleProactiveRefresh() {
-  // clear any existing timer
+export async function scheduleProactiveRefresh(): Promise<void> {
   if (refreshTimer) {
     clearTimeout(refreshTimer);
     refreshTimer = null;
   }
 
-  getTokens().then(tokens => {
-    if (!tokens) return;
+  const tokens = await getTokens();
+  if (!tokens) {
+    return;
+  }
 
-    // calculate milliseconds until just before expiry
-    const now         = Date.now();
-    const expiresInMs = tokens.expiresIn * 1000;
-    const elapsed     = now - tokens.fetchedAt;
-    const msUntilRefresh = expiresInMs - elapsed - (60 * 1000);
+  // calculate milliseconds until just before expiry
+  const now         = Date.now();
+  const expiresInMs = tokens.expiresIn * 1000;
+  const elapsed     = now - tokens.fetchedAt;
+  const msUntilRefresh = expiresInMs - elapsed - (60 * 1000);
 
-    // if it’s already too late, try immediate refresh
-    if (msUntilRefresh <= 0) {
-      doRefresh();
-    } else {
-      refreshTimer = setTimeout(doRefresh, msUntilRefresh);
-      console.log(`[Auth] scheduled refresh in ${msUntilRefresh/1000} seconds`);
-    }
-  });
+  // if it’s already too late, try immediate refresh
+  if (msUntilRefresh <= 0) {
+    doRefresh();
+  } else {
+    refreshTimer = setTimeout(doRefresh, msUntilRefresh);
+    console.log(`[Auth] scheduled refresh in ${msUntilRefresh/1000} seconds`);
+  }
 }
 
 /** Internal: do the refresh + reschedule or sign-out on failure */

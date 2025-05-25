@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           }
           const ok = await refreshTokens();
           if (ok) {
-            scheduleProactiveRefresh();
+            await scheduleProactiveRefresh();
             setSignedIn(true);
           } else {
             await clearTokens();
@@ -101,7 +101,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
       console.log('Storing tokens:', tokens);
       await storeTokens(tokens);
-      scheduleProactiveRefresh();
+      await scheduleProactiveRefresh();
       setSignedIn(true);
     } catch (err: any) {
       console.error('signIn error:', err);
@@ -116,7 +116,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setLoading(true);
     await clearTokens();
     setUserEmail(null);
-    scheduleProactiveRefresh();
+    await scheduleProactiveRefresh();
     setSignedIn(false);
     setLoading(false);
     // TODO: Optionally navigate to Auth or trigger Hosted-UI logout
