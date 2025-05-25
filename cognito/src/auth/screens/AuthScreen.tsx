@@ -6,47 +6,44 @@ import {
   View,
   Button,
   ActivityIndicator,
-  Alert
+  Alert,
 } from 'react-native';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
-import * as Crypto from 'expo-crypto';
 import Constants from 'expo-constants';
-import { RouteProp } from '@react-navigation/native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthFlowParamList } from '../navigators/types';
 import { useAuth } from '../contexts/AuthContext';
+import { useWebAuth } from '../hooks/useWebAuth';
+import { parseRedirectParams } from '../utils/redirect';
 
 WebBrowser.maybeCompleteAuthSession();
 
 const {
   COGNITO_DOMAIN,
   COGNITO_CLIENT_ID,
-  EXCHANGE_API_URL
+  EXCHANGE_API_URL,
 } = (Constants.manifest?.extra ?? {}) as Record<string,string>;
-
-const discovery = {
-  authorizationEndpoint: `https://${COGNITO_DOMAIN}/oauth2/authorize`,
-  tokenEndpoint:         `https://${COGNITO_DOMAIN}/oauth2/token`,
-};
 
 type Props = NativeStackScreenProps<AuthFlowParamList, 'Auth'>;
 
-export default function AuthScreen({ navigation, route }: Props) {
-  console.log('[AuthScreen] window.location:', window.location.href);
-  console.log('[AuthScreen] route.params =', route.params);
-  const { code } = route.params ?? {};
-  const isWeb = Platform.OS === 'web';
+export default function AuthScreen({ navigation }: Props) {
   const { signIn } = useAuth();
-
   const redirectUri = AuthSession.makeRedirectUri({
-    scheme:   'khatoon',
-    path:     'redirect',
-    //useProxy: false,
+    scheme: 'khatoon',
+    path:   'redirect',
   });
 
-  console.log(`[AuthScreen] running on ${isWeb ? 'web' : 'native'}`);
-  console.log('[AuthScreen] redirectUri:', redirectUri);
+  const { login, handleRedirect, loading } = useWebAuth({
+    domain:      COGNITO_DOMAIN,
+    clientId:    COGNITO_CLIENT_ID,
+    redirectUri,
+    exchangeUrl: `${EXCHANGE_API_URL}/exchange`,
+  });
+
+  const isWeb = Platform.OS === 'web';
+  console.log('isWeb', isWeb);
+  console.log('redirectUri', redirectUri);
 
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
@@ -55,89 +52,36 @@ export default function AuthScreen({ navigation, route }: Props) {
       scopes:       ['openid','email','profile'],
       redirectUri,
     },
-    discovery
-  );
-
-  //
-  // PKCE helpers for web
-  //
-  function randomString(length: number) {
-    const arr = new Uint8Array(length);
-    // browser crypto only on web
-    crypto.getRandomValues(arr);
-    return Array.from(arr).map(b => ('0' + b.toString(16)).slice(-2)).join('');
-  }
-
-  async function sha256Base64Url(str: string) {
-    const hash = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      str,
-      { encoding: Crypto.CryptoEncoding.BASE64 }
-    );
-    // convert base64 to base64url
-    return hash.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  }
-
-  async function generatePkcePair() {
-    const codeVerifier = randomString(32);
-    const codeChallenge = await sha256Base64Url(codeVerifier);
-    return { codeVerifier, codeChallenge };
-  }
-
-  // Web full-page redirect login
-  const webLogin = async () => {
-    try {
-      const { codeVerifier, codeChallenge } = await generatePkcePair();
-      sessionStorage.setItem('pkce_verifier', codeVerifier);
-
-      const params = new URLSearchParams({
-        response_type:         'code',
-        client_id:             COGNITO_CLIENT_ID,
-        redirect_uri:          redirectUri,
-        code_challenge:        codeChallenge,
-        code_challenge_method: 'S256',
-        scope:                 'openid email profile',
-      });
-      console.log('Web login params:', params.toString());
-
-      window.location.assign(
-        `https://${COGNITO_DOMAIN}/oauth2/authorize?${params.toString()}`
-      );
-    } catch (err: any) {
-      Alert.alert('PKCE error', err.message);
+    {
+      authorizationEndpoint: `https://${COGNITO_DOMAIN}/oauth2/authorize`,
+      tokenEndpoint:         `https://${COGNITO_DOMAIN}/oauth2/token`,
     }
-  };
+  );
+  console.log('request', request);
 
-  // Effect: handle callback (web) or popup response (native)
   useEffect(() => {
-    console.group('[AuthScreen] useEffect triggered');
-    console.log('response:', response);
-
-    if (isWeb) {
-      const { pathname, search } = window.location;
-      if (pathname === '/redirect' && search.includes('code=')) {
-        const ps = new URLSearchParams(search);
-        const code = ps.get('code')!;
-        const codeVerifier = sessionStorage.getItem('pkce_verifier')!;
-        console.log('Extracted code:', code, 'verifier:', codeVerifier);
-
-        console.group('[Auth:exchange]');
-        (async () => {
-          try {
-            await signIn(code, codeVerifier, redirectUri);
-            //window.history.replaceState({}, '', '/');
-            navigation.replace('Home');
-          } catch (e: any) {
-            console.error('Exchange error:', e);
-            Alert.alert('Login error', e.message);
-          }
-        })();
-      }
-    } else if (response?.type === 'success') {
-      const { code, codeVerifier } = response.params;
+    console.log("In useEffect");
+    if (isWeb && window.location.search.includes('code=')) {
       (async () => {
         try {
-          await signIn(code, codeVerifier, redirectUri);
+          const { code, codeVerifier } = parseRedirectParams(window.location.search)
+          console.log("code", code);
+          console.log("codeVerifier", codeVerifier);
+          console.log("window.location.search", window.location.search);
+          await handleRedirect(window.location.search);
+          console.log("handleRedirect done");
+          await signIn(code, codeVerifier)
+          console.log("heading to home");
+          navigation.replace('Home');
+        } catch (e: any) {
+          Alert.alert('Login error', e.message);
+        }
+      })();
+    } else if (!isWeb && response?.type === 'success') {
+      (async () => {
+        try {
+          await handleRedirect(`?code=${response.params.code}`);
+          await signIn(code, codeVerifier)
           navigation.replace('Home');
         } catch (e: any) {
           Alert.alert('Login error', e.message);
@@ -146,28 +90,34 @@ export default function AuthScreen({ navigation, route }: Props) {
     }
   }, [response]);
 
-  // Render
   if (isWeb) {
+    console.log("In web");
     return (
-      <View style={{ flex:1,justifyContent:'center',alignItems:'center' }}>
-        <Button title="Log in with Cognito" onPress={webLogin} />
+      <View style={{ flex:1, justifyContent:'center', alignItems:'center' }}>
+        <Button
+          title="Log in with Cognito"
+          onPress={login}
+          disabled={loading}
+        />
+        {loading && <ActivityIndicator style={{ marginTop: 10 }} />}
       </View>
     );
   }
 
+  // Native popup flow: wait until request is ready
   if (!request) {
     return (
-      <View style={{ flex:1,justifyContent:'center',alignItems:'center' }}>
+      <View style={{ flex:1, justifyContent:'center', alignItems:'center' }}>
         <ActivityIndicator size="large" />
       </View>
     );
   }
 
   return (
-    <View style={{ flex:1,justifyContent:'center',alignItems:'center' }}>
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center' }}>
       <Button
         title="Log in with Cognito"
-        onPress={() => promptAsync(/*{ useProxy: false }*/)}
+        onPress={() => promptAsync()}
       />
     </View>
   );
