@@ -108,6 +108,10 @@ describe('scheduleProactiveRefresh()', () => {
     });
   });
 
+  afterEach(() => {
+    (Date.now as jest.Mock).mockRestore();
+  });
+
   it('schedules a refresh one minute before expiry', async () => {
     const timeoutSpy = jest.spyOn(globalThis, 'setTimeout');
     await scheduleProactiveRefresh();
@@ -123,4 +127,5 @@ describe('scheduleProactiveRefresh()', () => {
     await scheduleProactiveRefresh();
     expect(clearSpy).toHaveBeenCalled();
   });
+
 });
