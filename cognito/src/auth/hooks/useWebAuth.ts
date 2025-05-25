@@ -4,6 +4,7 @@ import * as SecureStore from '../utils/tokenStorage';
 import { generatePkcePair } from '../utils/pkce';
 import { buildAuthorizeUrl } from '../utils/urls';
 import { exchangeCode } from '../utils/tokenClient';
+import type { OAuth2Config } from '../utils/urls';
 
 export function useWebAuth(config: OAuth2Config & { exchangeUrl: string }) {
   const [loading, setLoading] = useState(false);
