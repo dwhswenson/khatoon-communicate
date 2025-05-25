@@ -64,13 +64,14 @@ export default function AuthScreen({ navigation }: Props) {
     if (isWeb && window.location.search.includes('code=')) {
       (async () => {
         try {
-          const { code, codeVerifier } = parseRedirectParams(window.location.search)
+          const params = new URLSearchParams(window.location.search);
+          code = params.get('code');
           console.log("code", code);
-          console.log("codeVerifier", codeVerifier);
-          console.log("window.location.search", window.location.search);
-          await handleRedirect(window.location.search);
-          console.log("handleRedirect done");
-          await signIn(code, codeVerifier)
+          await signIn(
+            code,
+            sessionStorage.getItem('pkce_verifier')!,
+            redirectUri,
+          );
           console.log("heading to home");
           navigation.replace('Home');
         } catch (e: any) {

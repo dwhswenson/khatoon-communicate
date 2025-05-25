@@ -152,7 +152,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         isSignedIn,
         signIn,
         signOut,
-        getAccessToken
+        getAccessToken,
       }}
     >
       {children}
