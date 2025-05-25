@@ -15,21 +15,11 @@ const goodJwt =
   'eyJhbGciOiJub25lIn0.' +
   'eyJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20ifQ.';
 
-
-//
-// 2) NOW import everything else
-//
-
 import React                 from 'react';
 import { renderHook, act, waitFor }   from '@testing-library/react';
 import { AuthProvider, useAuth } from './AuthContext';
 import * as storage          from '../utils/tokenStorage';
 import * as refreshUtils     from '../utils/refreshTokens';
-
-
-//
-// 3) WRITE YOUR TESTS
-//
 
 describe('AuthContext', () => {
   beforeEach(() => {
@@ -77,7 +67,6 @@ describe('AuthContext', () => {
       refresh_token: 'R',
       expires_in:    3600,
     };
-    // polyfill fetch on global
     (globalThis as any).fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => payload,
@@ -94,13 +83,11 @@ describe('AuthContext', () => {
   });
 
   it('signOut() clears everything', async () => {
-    // first stub getTokens so provider thinks it's signed in
     (storage.getTokens as jest.Mock).mockResolvedValue({
       accessToken: 'x', idToken: goodJwt, refreshToken: 'z', expiresIn: 3600, fetchedAt: Date.now()
     });
     (refreshUtils.refreshTokens as jest.Mock).mockResolvedValue(true);
 
-    // mount and rehydrate
     const { result } = renderHook(() => useAuth(), {
       wrapper: AuthProvider,
     });
@@ -108,10 +95,75 @@ describe('AuthContext', () => {
 
     expect(result.current.isSignedIn).toBe(true);
 
-    // now sign out
     await act(() => result.current.signOut());
     expect(result.current.isSignedIn).toBe(false);
     expect(storage.clearTokens).toHaveBeenCalled();
     expect(result.current.userEmail).toBeNull();
+  });
+
+  it('getAccessToken returns current access token if not expired', async () => {
+    const now = Date.now();
+    (storage.getTokens as jest.Mock).mockResolvedValue({
+      accessToken:  'tokenA',
+      idToken:      goodJwt,
+      refreshToken: 'refreshA',
+      expiresIn:    3600,
+      fetchedAt:    now,
+    });
+
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      const t = await result.current.getAccessToken();
+      expect(t).toBe('tokenA');
+    });
+  });
+
+  it('getAccessToken refreshes when token is expired', async () => {
+    const oldTime = Date.now() - 10_000 * 1000;
+    (storage.getTokens as jest.Mock).mockResolvedValueOnce({
+      accessToken:  'oldToken',
+      idToken:      goodJwt,
+      refreshToken: 'refreshA',
+      expiresIn:    1,
+      fetchedAt:    oldTime,
+    });
+    (refreshUtils.refreshTokens as jest.Mock).mockResolvedValueOnce(true);
+    (storage.getTokens as jest.Mock).mockResolvedValueOnce({
+      accessToken:  'newToken',
+      idToken:      goodJwt,
+      refreshToken: 'refreshB',
+      expiresIn:    3600,
+      fetchedAt:    Date.now(),
+    });
+
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      const t = await result.current.getAccessToken();
+      expect(refreshUtils.refreshTokens).toHaveBeenCalled();
+      expect(t).toBe('newToken');
+    });
+  });
+
+  it('getAccessToken throws if refresh fails', async () => {
+    const oldTime = Date.now() - 10_000 * 1000;
+    (storage.getTokens as jest.Mock).mockResolvedValue({
+      accessToken:  'oldToken',
+      idToken:      goodJwt,
+      refreshToken: 'refreshA',
+      expiresIn:    1,
+      fetchedAt:    oldTime,
+    });
+    (refreshUtils.refreshTokens as jest.Mock).mockResolvedValueOnce(false);
+
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await expect(result.current.getAccessToken())
+      .rejects
+      .toThrow('Session expired');
   });
 });
