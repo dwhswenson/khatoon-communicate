@@ -90,7 +90,7 @@ export default function AuthScreen({ navigation }: Props) {
   if (isWeb) {
     console.log("In web");
     return (
-      <View style={{ flex:1, justifyContent:'center', alignItems:'center' }}>
+      <View testID="Auth-root" style={{ flex:1, justifyContent:'center', alignItems:'center' }}>
         <Button
           title="Log in with Cognito"
           onPress={login}

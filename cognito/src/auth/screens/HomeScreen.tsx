@@ -46,7 +46,7 @@ export default function HomeScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center' }}>
+    <View testID="Home-root" style={{ flex:1, justifyContent:'center', alignItems:'center' }}>
       {userEmail ? (
         <Text style={{ marginBottom: 20 }}>
           Logged in as: {userEmail}

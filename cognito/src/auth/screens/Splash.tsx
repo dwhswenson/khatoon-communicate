@@ -7,7 +7,7 @@ import RootStackParamList from '../../../App';
 export default function Splash() {
   console.log('Splash screen loaded');
   return (
-    <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+    <View testID="Splash-root" style={{flex:1, justifyContent:'center', alignItems:'center'}}>
       <ActivityIndicator size="large" />
     </View>
   );
