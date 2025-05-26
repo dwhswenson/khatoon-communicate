@@ -1,4 +1,29 @@
 // src/contexts/AuthContext.tsx
+
+/**
+ * @packageDocumentation
+ *
+ * The AuthContext module provides React context, hooks, and components
+ * to manage user authentication state within your app. It wraps the
+ * login, token storage, refresh, and logout logic behind a simple
+ * useAuth() hook and AuthProvider component.
+ *
+ * Usage:
+ *
+ * ```tsx
+ * import { AuthProvider } from '@expognito/auth';
+ *
+ * function App() {
+ *   return (
+ *     <AuthProvider>
+ *       <CoreApp />
+ *     </AuthProvider>
+ *   );
+ * }
+ * ```
+ */
+
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Alert } from 'react-native';
 //import { useNavigation } from '@react-navigation/native';
@@ -16,21 +41,52 @@ import { refreshTokens, scheduleProactiveRefresh } from '../utils/refreshTokens'
 
 const { EXCHANGE_API_URL } = (Constants.manifest?.extra ?? {}) as Record<string, string>;
 
+/**
+ * The shape of the authentication context value provided by `AuthProvider`.
+ */
 export interface AuthContextData {
+  /** True while initial token rehydration or ongoing login/logout is in progress */
   isLoading: boolean;
+
+  /** True if a valid user session is currently authenticated */
   isSignedIn: boolean;
+
+  /**
+   * Exchange an authorization code for tokens, store them,
+   * set up refresh, and update user state.
+   *
+   * @param code The OAuth2 authorization code
+   * @param codeVerifier The PKCE code verifier used in the flow
+   * @param redirectUri URI that was used for the redirect
+   */
   signIn(code: string, codeVerifier: string, redirectUri: string): Promise<void>;
+
+  /** The email address decoded from the ID token, if signed in */
   userEmail: string | null;
+
+  /**
+   * Clears all authentication tokens and resets context state.
+   */
   signOut(): Promise<void>;
+
+  /**
+   * Returns the current access token, refreshing if expired.
+   * @throws if no session or refresh fails
+   */
   getAccessToken(): Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextData | undefined>(undefined);
 
 interface AuthProviderProps {
+  /** Child components that will have access to auth state */
   children: ReactNode;
 }
 
+/**
+ * AuthProvider wraps your app and provides `useAuth()` with
+ * login/logout/token-refresh behavior via React Context.
+ */
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   //const navigation = useNavigation<any>();
   const [isLoading, setLoading] = useState(true);
@@ -69,7 +125,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     })();
   }, []);
 
-  // Exchange code for tokens, persist, schedule refresh
+  /**
+   * Exchange authorization code for tokens and sign in.
+   * Handles token storage, decode of email, and scheduling refresh.
+   */
   const signIn = async (code: string, codeVerifier: string, redirectUri: string) => {
     setLoading(true);
     try {
@@ -112,6 +171,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  /**
+   * Clear all tokens and reset auth state.
+   */
   const signOut = async () => {
     setLoading(true);
     await clearTokens();
@@ -123,6 +185,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     //navigation.reset({ index: 0, routes: [{ name: 'Auth' }] });
   };
 
+  /**
+   * Returns a fresh access token, refreshing if expired.
+   * @throws if not authenticated or refresh fails
+   */
   const getAccessToken = async (): Promise<string> => {
     const tokens = await getTokens();
     if (!tokens) throw new Error('Not authenticated');
@@ -160,6 +226,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   );
 };
 
+/**
+ * Hook to access authentication context. Must be used within `AuthProvider`.
+ * @throws if used outside of provider
+ */
 export const useAuth = (): AuthContextData => {
   const context = useContext(AuthContext);
   if (!context) {
